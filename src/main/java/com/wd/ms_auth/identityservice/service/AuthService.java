@@ -1,0 +1,112 @@
+package com.wd.ms_auth.identityservice.service;
+
+import java.util.Optional;
+
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import com.wd.ms_auth.identityservice.dto.JwtDto;
+import com.wd.ms_auth.identityservice.dto.LoginRequestDto;
+import com.wd.ms_auth.identityservice.dto.RegisterRequestDto;
+import com.wd.ms_auth.identityservice.dto.RegisterResponseDto;
+import com.world_dance.wd_lib_common.dto.HttpGlobalResponse;
+import com.world_dance.wd_lib_common.entity.User;
+import com.world_dance.wd_lib_common.exception.BadRequestException;
+import com.world_dance.wd_lib_common.repository.UserRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+    
+    private final UserRepository userRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    private final JwtService jwtService;
+
+    /**
+     * Registra usuario en el sistema
+     * @param registerRequestDto
+     * @return RegisterResponseDto
+     */
+    public RegisterResponseDto register(RegisterRequestDto request) {
+        
+        RegisterResponseDto response = new RegisterResponseDto();
+        String email = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(email)) {
+            throw new BadRequestException("El correo ya se encuentra registrado");
+        }
+
+        if(userRepository.existsByDocumentNumber(request.getDocumentNumber())) {
+            throw new RuntimeException("El numero de documento ya se encuentra registrado");
+        }
+
+        User user = new User();
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setDocumentNumber(request.getDocumentNumber());
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+
+
+        User savedUser = userRepository.save(user);
+
+
+        response.setId(savedUser.getId());
+        response.setDocumentNumber(savedUser.getDocumentNumber());
+        response.setFirstName(savedUser.getFirstName());
+        response.setLastName(savedUser.getLastName());
+        response.setEmail(savedUser.getEmail());
+        response.setActive(savedUser.getActive());
+        response.setMessage("Usuario registrado correctamente");
+        return response;
+    }
+    
+    /**
+     * Inicio de sesión de usuario
+     * 
+     * @param request
+     * @return HttpGlobalResponse<JwtDto>
+     */
+    public HttpGlobalResponse<JwtDto> login(LoginRequestDto request) {
+        HttpGlobalResponse<JwtDto> response = new HttpGlobalResponse<>();
+        Optional<User> userFound = userRepository.findByEmail(request.getEmail());
+
+
+        if (userFound.isEmpty()) {
+            response.setMessage("Este usuario no se encuentra registrado");
+            return response;
+        }
+
+        User user = userFound.get();
+
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            response.setMessage("Correo o contraseña son incorrectos");
+            return response;
+        }
+
+        JwtDto jwtDTO = new JwtDto();
+        String jwt = jwtService.generateToken(user.getId(), user.getEmail());
+        jwtDTO.setJwt(jwt);
+        response.setMessage("Inicio de sesión exitoso");
+        response.setData(jwtDTO);
+        return response;
+    }
+
+    /**
+     * Refresca el token de seguridad, generando uno nuevo con la misma información pero con nueva expiración
+     * @param token
+     * @return response con nuevo token
+     * @throws Exception
+     */
+    public JwtDto refreshToken(String token) throws Exception {
+        JwtDto response = new JwtDto();
+        String jwt = jwtService.refreshToken(token);
+        response.setJwt(jwt);
+        return response;
+    }
+}

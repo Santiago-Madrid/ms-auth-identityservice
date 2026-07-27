@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info:
+  title: WordDance-ms-auth-identityservice
+  description: ''
+  version: 1.0.0
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: peticion para registrase
+      responses:
+        '200':
+          description: Successful response
+      operationId: peticion_para_registrase
+      requestBody:
+        content:
+          application/json:
+            example:
+              firstName: santiago
+              lastName: guarin
+              documentNumber: '1094900027'
+              email: santiago@gmail.com
+              password: '11111111'
+  /api/v1/auth/login:
+    post:
+      summary: 'peticion para loguearse '
+      responses:
+        '200':
+          description: Successful response
+      operationId: peticion_para_loguearse_
+      requestBody:
+        content:
+          application/json:
+            example:
+              email: santiago@gmail.com
+              password: '11111111'
+servers:
+  - url: http://localhost:9090

@@ -29,5 +29,8 @@ server:
 
 security:
   jwt:
-    secret-key: fx3VDiOxgojN6m3+9reMeoSdyPt7JOq0Zx67hKOIrHI=
     token-expiration: 900000
+    secret-key: ${jwt.secret}
+
+jwt:
+  secret: ${JWT_SECRET:fx3VDiOxgojN6m3+9reMeoSdyPt7JOq0Zx67hKOIrHI=}

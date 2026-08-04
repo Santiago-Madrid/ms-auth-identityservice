@@ -20,7 +20,7 @@ public class JwtService {
     /**
      * Inyectamos la clave secreta en el service que viene del yaml
      */
-    @Value("${security.jwt.secret-key}")
+    @Value("${jwt.secret}")
     String secretKey;
 
     /**
@@ -36,7 +36,12 @@ public class JwtService {
      * @return firma secreta
      */
     private SecretKey getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey);
+        } catch (Exception e) {
+            keyBytes = secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
@@ -44,13 +49,13 @@ public class JwtService {
      * Generar el token de seguridad al iniciar sesion
      * 
      * @param userId
-     * @param username
+     * @param email
      * @return jwt
      */
-    public String generateToken(Long userId,String username) {
+    public String generateToken(Long userId,String email) {
         return Jwts.builder()
                 .claim("userId", userId)
-                .subject(username) 
+                .subject(email) 
                 .issuedAt(new Date()) 
                 .expiration(new Date(System.currentTimeMillis() + tokenExpiration))
                 .signWith(getSignKey()) 
@@ -100,7 +105,7 @@ public class JwtService {
      * @param token
      * @return nombre de usuario
      */
-    public String extractUsername(String token) {
+    public String extractEmail(String token) {
         return extractClaims(token, Claims::getSubject);
     }
 

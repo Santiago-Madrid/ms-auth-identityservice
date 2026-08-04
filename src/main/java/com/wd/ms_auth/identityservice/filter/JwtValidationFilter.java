@@ -49,7 +49,7 @@ public class JwtValidationFilter extends OncePerRequestFilter {
         try {
             if (jwtService.isTokenValid(token)) {
 
-                String username = jwtService.extractUsername(token);
+                String username = jwtService.extractEmail(token);
                 Long userId = jwtService.extractUserId(token);
 
                 request.setAttribute("username", username);

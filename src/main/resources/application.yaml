@@ -1,18 +1,31 @@
 spring:
   application:
     name: ms-auth-identityservice
-
-  cloud:
-    consul:
-      host: ${URL_CONSUL:localhost}
-      port: ${PORT_CONSUL:8500}
-
   datasource:
     url: jdbc:mysql://localhost:3306/world_dance_auth
     username: root
     password: admin
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  cloud:
+    consul:
+      host: ${URL_CONSUL:localhost}
+      port: ${PORT_CONSUL:8500}
+    discovery:
+        health-check-path: /api/v1/actuator/health
+        health-check-interval: 10s
+        instance-id: ${spring.application.name}:${random.value}
+        prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect # Dialecto para MySQL (traduce las consultas sql a MySQL)
     hibernate: # sub configuracion para usar el orm
@@ -21,12 +34,8 @@ spring:
     properties: # propiedades extras de hibernate
       hibernate:
         format-sql: true # Formatear SQL en los logs para mayor legibilidad
-
-logging: # Seccion de logs
-  level: # Niveles por paquete / clase
-    org.springframework.web: DEBUG # Logs detallados para web (request HTTP)
-    org.hibernate.SQL: DEBUG # Muestras queries SQL
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE # Muestra valores bound en queries nativas (remplaza '?' por 'value')
+  main:
+    allow-bean-definition-overriding: true
 
 server:
   port: 9090
@@ -35,8 +44,4 @@ server:
 
 security:
   jwt:
-    token-expiration: 900000
-    secret-key: ${jwt.secret}
-
-jwt:
-  secret: ${JWT_SECRET:fx3VDiOxgojN6m3+9reMeoSdyPt7JOq0Zx67hKOIrHI=}
+    secret-key: ${JWT_SECRET:F0bVQgRnuk6DRxooVWKaG0ndlgqEeI/4YXObXeOaR2Q=}

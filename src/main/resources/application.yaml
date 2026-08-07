@@ -6,16 +6,25 @@ spring:
     username: root
     password: admin
     driver-class-name: com.mysql.cj.jdbc.Driver
-
   cloud:
     consul:
-      host: ${URL_CONSUL:localhost}
-      port: ${PORT_CONSUL:8500}
-    discovery:
+      host: localhost
+      port: 8500
+      discovery:
         health-check-path: /api/v1/actuator/health
         health-check-interval: 10s
         instance-id: ${spring.application.name}:${random.value}
         prefer-ip-address: true
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format-sql: true
+  main:
+    allow-bean-definition-overriding: true
 
 management:
   endpoints:
@@ -25,23 +34,16 @@ management:
   endpoint:
     health:
       show-details: always
-  
-  jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect # Dialecto para MySQL (traduce las consultas sql a MySQL)
-    hibernate: # sub configuracion para usar el orm
-      ddl-auto: none
-    show-sql: true # Muestra sentencias sql traducidas a lenguaje sql
-    properties: # propiedades extras de hibernate
-      hibernate:
-        format-sql: true # Formatear SQL en los logs para mayor legibilidad
-  main:
-    allow-bean-definition-overriding: true
 
 server:
   port: 9090
   servlet:
     context-path: /api/v1
 
+jwt:
+  secret: ${JWT_SECRET:F0bVQgRnuk6DRxooVWKaG0ndlgqEeI/4YXObXeOaR2Q=}
+
 security:
   jwt:
     secret-key: ${JWT_SECRET:F0bVQgRnuk6DRxooVWKaG0ndlgqEeI/4YXObXeOaR2Q=}
+    token-expiration: 3600000

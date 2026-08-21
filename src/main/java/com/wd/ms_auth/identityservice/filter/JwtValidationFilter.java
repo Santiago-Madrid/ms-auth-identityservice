@@ -22,7 +22,10 @@ public class JwtValidationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
     /**
-     * Filtro que se ejecuta en cada solicitud para validar el token JWT. Si el token es válido, extrae el username, userId y rolId y los agrega como atributos a la solicitud. Si el token no es válido o ha expirado, devuelve un error 401 Unauthorized con un mensaje de error en formato JSON.
+     * Filtro que se ejecuta en cada solicitud para validar el token JWT. Si el
+     * token es válido, extrae el username, userId y rolId y los agrega como
+     * atributos a la solicitud. Si el token no es válido o ha expirado, devuelve un
+     * error 401 Unauthorized con un mensaje de error en formato JSON.
      */
     @Override
     protected void doFilterInternal(
@@ -72,10 +75,14 @@ public class JwtValidationFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
             response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
-        }}
-        /**
-         * Filtra las rutas que no requieren autenticación, en este caso, las rutas de login y registro. Si la ruta es una de estas, el filtro no se ejecuta y la solicitud continúa sin validar el token JWT.
-         */
+        }
+    }
+
+    /**
+     * Filtra las rutas que no requieren autenticación, en este caso, las rutas de
+     * login y registro. Si la ruta es una de estas, el filtro no se ejecuta y la
+     * solicitud continúa sin validar el token JWT.
+     */
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -84,6 +91,7 @@ public class JwtValidationFilter extends OncePerRequestFilter {
 
         log.info("REQUEST URI -> {}", path);
 
-        return path.startsWith("/auth");
+        return path.startsWith("/auth") || path.startsWith("/actuator");
     }
+
 }

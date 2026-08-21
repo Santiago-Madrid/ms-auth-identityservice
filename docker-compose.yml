@@ -1,0 +1,11 @@
+services:
+  ms-auth-identityservice:
+    build: .
+    container_name: ms-auth
+    ports:
+      - "8081:9090"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://host.docker.internal:3306/world_dance_auth
+      SPRING_CLOUD_CONSUL_HOST: host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -8,14 +8,22 @@ import com.wd.ms_auth.identityservice.security.RoleInterceptor;
 
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Configuration
-public class WebConfig implements WebMvcConfigurer{
+@RequiredArgsConstructor
+public class WebConfig implements WebMvcConfigurer {
+
     private final RoleInterceptor roleInterceptor;
 
-    @Override 
+    @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // Registramos el interceptor para que se ejecute en todas las rutas
-        registry.addInterceptor(roleInterceptor);
+        registry.addInterceptor(roleInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns(
+                    "/actuator/**", 
+                    "/api/v1/actuator/**", 
+                    "/auth/**", 
+                    "/api/v1/auth/**",
+                    "/error"
+                );
     }
 }

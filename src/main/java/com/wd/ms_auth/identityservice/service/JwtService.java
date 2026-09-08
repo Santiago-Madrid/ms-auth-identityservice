@@ -1,5 +1,6 @@
 package com.wd.ms_auth.identityservice.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
@@ -17,77 +18,61 @@ import io.jsonwebtoken.security.Keys;
 
 @Service
 public class JwtService {
-    /**
-     * Inyectamos la clave secreta en el service que viene del yaml
-     */
+
     @Value("${jwt.secret}")
-    String secretKey;
+    private String secretKey;
 
-    /**
-     * Inyectamos la clave secreta en el service que viene del yaml
-     */
     @Value("${security.jwt.token-expiration}")
-    Long tokenExpiration;
+    private Long tokenExpiration;
 
     /**
-     * Transforma la clave secreta de String (BASE64) a un obejto SecretKey
-     * utilizable por la libreria
-     * 
-     * @return firma secreta
+     * Convierte la clave secreta en un objeto SecretKey.
      */
     private SecretKey getSignKey() {
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(secretKey);
         } catch (Exception e) {
-            keyBytes = secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
     /**
-     * Generar el token de seguridad al iniciar sesion
-     * 
-     * @param userId
-     * @param email
-     * @return jwt
+     * Genera el JWT incluyendo el ID de usuario, email y el ID del rol.
      */
-    public String generateToken(Long userId,String email) {
+    public String generateToken(Long userId, String email, Long roleId) {
         return Jwts.builder()
                 .claim("userId", userId)
-                .subject(email) 
-                .issuedAt(new Date()) 
+                .claim("roleId", roleId)
+                .subject(email)
+                .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + tokenExpiration))
-                .signWith(getSignKey()) 
+                .signWith(getSignKey())
                 .compact();
     }
 
     /**
-     * Verifica si el token es válido
-     * 
-     * @param token
-     * @return boleano
+     * Sobrecarga del método por compatibilidad.
+     */
+    public String generateToken(Long userId, String email) {
+        return generateToken(userId, email, null);
+    }
+
+    /**
+     * Valida la firma y expiración del token.
      */
     public Boolean isTokenValid(String token) {
         try {
             Jwts.parser().verifyWith(getSignKey()).build().parseSignedClaims(token);
             return true;
         } catch (JwtException e) {
-            e.printStackTrace();
-            return false;
-        } catch (Exception e) {
-            e.printStackTrace();
             return false;
         }
     }
 
     /**
-     * Extraer todos los claims del token
-     * 
-     * @param <T>
-     * @param token
-     * @param resolver
-     * @return claims
+     * Extrae un claim específico mediante una función resolver.
      */
     public <T> T extractClaims(String token, Function<Claims, T> resolver) {
         final Claims claims = Jwts.parser()
@@ -99,31 +84,32 @@ public class JwtService {
         return resolver.apply(claims);
     }
 
-    /**
-     * Extraer el nombre de usuario del token
-     * 
-     * @param token
-     * @return nombre de usuario
-     */
     public String extractEmail(String token) {
         return extractClaims(token, Claims::getSubject);
     }
 
     /**
-     * Extrae el id del usuario
-     * 
-     * @param token
-     * @return id del usuario
+     * Extrae el userId mapeando de forma segura de Integer/Number a Long.
      */
     public Long extractUserId(String token) {
-        return extractClaims(token, claims -> claims.get("userId", Long.class));
+        return extractClaims(token, claims -> {
+            Object userId = claims.get("userId");
+            return userId instanceof Number ? ((Number) userId).longValue() : null;
+        });
     }
 
     /**
-     * Refresca el token de seguridad, generando uno nuevo con la misma información pero con nueva expiración
-     * @param token
-     * @return generar nuevo token
-     * @throws Exception
+     * Extrae el roleId del token.
+     */
+    public Long extractRoleId(String token) {
+        return extractClaims(token, claims -> {
+            Object roleId = claims.get("roleId");
+            return roleId instanceof Number ? ((Number) roleId).longValue() : null;
+        });
+    }
+
+    /**
+     * Genera un nuevo token basándose en los claims de un token existente.
      */
     public String refreshToken(String token) throws Exception {
         Claims claims;
@@ -135,13 +121,17 @@ public class JwtService {
                     .parseSignedClaims(token)
                     .getPayload();
         } catch (ExpiredJwtException e) {
-            throw new Exception("Token is expired" + e.getMessage());
+            claims = e.getClaims(); // Permite refrescar tokens recién expirados
         } catch (JwtException e) {
-            throw new Exception("Token is invalid" + e.getMessage());
+            throw new Exception("Token inválido: " + e.getMessage());
         }
 
-        // Generamos nuevo token con nueva expiracion
-        return generateToken(claims.get("userId", Long.class),
-        claims.getSubject());
+        Object rawUserId = claims.get("userId");
+        Object rawRoleId = claims.get("roleId");
+
+        Long userId = rawUserId instanceof Number ? ((Number) rawUserId).longValue() : null;
+        Long roleId = rawRoleId instanceof Number ? ((Number) rawRoleId).longValue() : null;
+
+        return generateToken(userId, claims.getSubject(), roleId);
     }
 }

@@ -13,6 +13,8 @@ import com.wd.ms_auth.identityservice.dto.RegisterRequestDto;
 import com.wd.ms_auth.identityservice.dto.RegisterResponseDto;
 import com.wd.ms_auth.identityservice.service.AuthService;
 import com.world_dance.wd_lib_common.dto.HttpGlobalResponse;
+import com.world_dance.wd_lib_common.dto.PasswordRecoveryRequestDto;
+import com.world_dance.wd_lib_common.dto.PasswordResetRequestDto;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -78,6 +80,24 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+    }
+
+    @PostMapping("/recover-password")
+    public ResponseEntity<HttpGlobalResponse<Void>> recoverPassword(@Valid @RequestBody PasswordRecoveryRequestDto request) {
+        HttpGlobalResponse<Void> response = authService.recoverPassword(request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<HttpGlobalResponse<Void>> resetPassword(@Valid @RequestBody PasswordResetRequestDto request) {
+        try {
+            HttpGlobalResponse<Void> response = authService.resetPassword(request);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        } catch (Exception e) {
+            HttpGlobalResponse<Void> errorResponse = new HttpGlobalResponse<>();
+            errorResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
         }
     }
 }

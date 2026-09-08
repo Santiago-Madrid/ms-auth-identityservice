@@ -2,19 +2,24 @@ spring:
   application:
     name: ms-auth-identityservice
   datasource:
-    url: jdbc:mysql://localhost:3306/world_dance_auth
-    username: root
-    password: admin
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql-auth:3306/world_dance_auth}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:admin}
     driver-class-name: com.mysql.cj.jdbc.Driver
   cloud:
     consul:
-      host: localhost
+      host: ${SPRING_CLOUD_CONSUL_HOST:worlddance-consul}
       port: 8500
       discovery:
+        service-name: ms-auth-identityservice
+        instance-id: ${spring.application.name}:${random.value}
+        port: 9091
+        prefer-ip-address: true
         health-check-path: /api/v1/actuator/health
         health-check-interval: 10s
-        instance-id: ${spring.application.name}:${random.value}
-        prefer-ip-address: true
+        health-check-critical-timeout: 1m
+        tags:
+          - contextPath=/api/v1
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
@@ -23,8 +28,24 @@ spring:
     properties:
       hibernate:
         format-sql: true
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME:jhoansanti1509@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:gqresmrmhajjvoia}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   main:
     allow-bean-definition-overriding: true
+
+server:
+  port: 9091
+  servlet:
+    context-path: /api/v1
 
 management:
   endpoints:
@@ -37,11 +58,6 @@ management:
   health:
     mongodb:
       enabled: false
-
-server:
-  port: 9091
-  servlet:
-    context-path: /api/v1
 
 jwt:
   secret: ${JWT_SECRET:F0bVQgRnuk6DRxooVWKaG0ndlgqEeI/4YXObXeOaR2Q=}

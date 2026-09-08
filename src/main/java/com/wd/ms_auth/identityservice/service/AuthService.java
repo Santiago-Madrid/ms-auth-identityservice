@@ -13,6 +13,12 @@ import com.world_dance.wd_lib_common.dto.HttpGlobalResponse;
 import com.world_dance.wd_lib_common.entity.User;
 import com.world_dance.wd_lib_common.exception.BadRequestException;
 import com.world_dance.wd_lib_common.repository.UserRepository;
+import com.world_dance.wd_lib_common.repository.PasswordRecoveryTokenRepository;
+import com.world_dance.wd_lib_common.entity.PasswordRecoveryToken;
+import com.world_dance.wd_lib_common.dto.PasswordRecoveryRequestDto;
+import com.world_dance.wd_lib_common.dto.PasswordResetRequestDto;
+import java.time.LocalDateTime;
+import java.util.Random;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +31,10 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     private final JwtService jwtService;
+
+    private final EmailService emailService;
+
+    private final PasswordRecoveryTokenRepository passwordRecoveryTokenRepository;
 
     /**
      * Registra usuario en el sistema
@@ -107,6 +117,82 @@ public class AuthService {
         JwtDto response = new JwtDto();
         String jwt = jwtService.refreshToken(token);
         response.setJwt(jwt);
+        return response;
+    }
+
+    /**
+     * Genera un código de recuperación de contraseña y lo envía por correo
+     * @param request
+     */
+    public HttpGlobalResponse<Void> recoverPassword(PasswordRecoveryRequestDto request) {
+        HttpGlobalResponse<Void> response = new HttpGlobalResponse<>();
+        Optional<User> userFound = userRepository.findByEmail(request.getEmail());
+
+        if (userFound.isEmpty()) {
+            response.setMessage("Si el correo existe en nuestro sistema, recibirá un código de recuperación");
+            return response;
+        }
+
+        User user = userFound.get();
+
+        // Generar código numérico de 6 dígitos
+        Random random = new Random();
+        int codeInt = 100000 + random.nextInt(900000);
+        String code = String.valueOf(codeInt);
+
+        // Invalidar códigos anteriores
+        Optional<PasswordRecoveryToken> previousToken = passwordRecoveryTokenRepository.findTopByUserAndUsedFalseOrderByExpiryDateDesc(user);
+        if (previousToken.isPresent()) {
+            PasswordRecoveryToken prev = previousToken.get();
+            prev.setUsed(true);
+            passwordRecoveryTokenRepository.save(prev);
+        }
+
+        PasswordRecoveryToken token = new PasswordRecoveryToken();
+        token.setCode(code);
+        token.setUser(user);
+        token.setExpiryDate(LocalDateTime.now().plusMinutes(15));
+        token.setUsed(false);
+
+        passwordRecoveryTokenRepository.save(token);
+
+        emailService.sendPasswordRecoveryEmail(user.getEmail(), code);
+
+        response.setMessage("Si el correo existe en nuestro sistema, recibirá un código de recuperación");
+        return response;
+    }
+
+    /**
+     * Resetea la contraseña utilizando el código de recuperación
+     * @param request
+     */
+    public HttpGlobalResponse<Void> resetPassword(PasswordResetRequestDto request) {
+        HttpGlobalResponse<Void> response = new HttpGlobalResponse<>();
+        Optional<User> userFound = userRepository.findByEmail(request.getEmail());
+
+        if (userFound.isEmpty()) {
+            throw new BadRequestException("El código es inválido o ha expirado");
+        }
+
+        User user = userFound.get();
+
+        Optional<PasswordRecoveryToken> tokenFound = passwordRecoveryTokenRepository.findByCodeAndUserAndUsedFalse(request.getCode(), user);
+
+        if (tokenFound.isEmpty() || tokenFound.get().getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("El código es inválido o ha expirado");
+        }
+
+        PasswordRecoveryToken token = tokenFound.get();
+        
+        // Actualizar contraseña
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Marcar token como usado
+        token.setUsed(true);
+        passwordRecoveryTokenRepository.save(token);
+
+        response.setMessage("Contraseña actualizada correctamente");
         return response;
     }
 }

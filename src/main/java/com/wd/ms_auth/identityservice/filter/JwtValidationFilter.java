@@ -21,12 +21,18 @@ public class JwtValidationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
-    /**
-     * Filtro que se ejecuta en cada solicitud para validar el token JWT. Si el
-     * token es válido, extrae el username, userId y rolId y los agrega como
-     * atributos a la solicitud. Si el token no es válido o ha expirado, devuelve un
-     * error 401 Unauthorized con un mensaje de error en formato JSON.
-     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        log.info("REQUEST URI -> {}", path);
+
+        // Usar contains para cubrir rutas con prefijo como /api/v1/auth o /api/v1/actuator
+        return path.contains("/auth") 
+            || path.contains("/actuator") 
+            || path.contains("/error");
+    }
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -37,13 +43,9 @@ public class JwtValidationFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
-
-            response.getWriter()
-                    .write("{\"error\": \"Authorization header missing\"}");
-
+            response.getWriter().write("{\"error\": \"Authorization header missing\"}");
             return;
         }
 
@@ -51,12 +53,14 @@ public class JwtValidationFilter extends OncePerRequestFilter {
 
         try {
             if (jwtService.isTokenValid(token)) {
-
                 String username = jwtService.extractEmail(token);
                 Long userId = jwtService.extractUserId(token);
+                Long roleId = jwtService.extractRoleId(token);
 
                 request.setAttribute("username", username);
                 request.setAttribute("userId", userId);
+                request.setAttribute("role", roleId); // Necesario para RoleInterceptor
+                
                 filterChain.doFilter(request, response);
 
             } else {
@@ -65,7 +69,6 @@ public class JwtValidationFilter extends OncePerRequestFilter {
                 response.getWriter().write("{\"error\": \"Token is invalid or expired\"}");
             }
         } catch (Exception e) {
-
             log.error("Error JWT", e);
 
             if (e instanceof RuntimeException runtimeException) {
@@ -77,21 +80,4 @@ public class JwtValidationFilter extends OncePerRequestFilter {
             response.getWriter().write("{\"error\": \"" + e.getMessage() + "\"}");
         }
     }
-
-    /**
-     * Filtra las rutas que no requieren autenticación, en este caso, las rutas de
-     * login y registro. Si la ruta es una de estas, el filtro no se ejecuta y la
-     * solicitud continúa sin validar el token JWT.
-     */
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-
-        String path = request.getServletPath();
-
-        log.info("REQUEST URI -> {}", path);
-
-        return path.startsWith("/auth") || path.startsWith("/actuator");
-    }
-
 }

@@ -102,6 +102,16 @@ public class AuthService {
         JwtDto jwtDTO = new JwtDto();
         String jwt = jwtService.generateToken(user.getId(), user.getEmail());
         jwtDTO.setJwt(jwt);
+
+        com.world_dance.wd_lib_common.dto.UserResponseDto userDto = new com.world_dance.wd_lib_common.dto.UserResponseDto();
+        userDto.setId(user.getId());
+        userDto.setFirstName(user.getFirstName());
+        userDto.setLastName(user.getLastName());
+        userDto.setDocumentNumber(user.getDocumentNumber());
+        userDto.setEmail(user.getEmail());
+        userDto.setActive(user.getActive());
+        jwtDTO.setUser(userDto);
+
         response.setMessage("Inicio de sesión exitoso");
         response.setData(jwtDTO);
         return response;

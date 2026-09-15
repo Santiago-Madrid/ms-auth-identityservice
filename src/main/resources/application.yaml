@@ -28,17 +28,6 @@ spring:
     properties:
       hibernate:
         format-sql: true
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${SPRING_MAIL_USERNAME:jhoansanti1509@gmail.com}
-    password: ${SPRING_MAIL_PASSWORD:gqresmrmhajjvoia}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
   main:
     allow-bean-definition-overriding: true
 

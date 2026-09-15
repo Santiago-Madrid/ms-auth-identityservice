@@ -139,8 +139,7 @@ public class AuthService {
         Optional<User> userFound = userRepository.findByEmail(request.getEmail());
 
         if (userFound.isEmpty()) {
-            response.setMessage("Si el correo existe en nuestro sistema, recibirá un código de recuperación");
-            return response;
+            throw new BadRequestException("El correo ingresado no se encuentra registrado en el sistema");
         }
 
         User user = userFound.get();
@@ -169,6 +168,30 @@ public class AuthService {
         emailService.sendPasswordRecoveryEmail(user.getEmail(), code);
 
         response.setMessage("Si el correo existe en nuestro sistema, recibirá un código de recuperación");
+        return response;
+    }
+
+    /**
+     * Resetea la contraseña utilizando el código de recuperación
+     * @param request
+     */
+    public HttpGlobalResponse<Void> verifyRecoveryCode(com.wd.ms_auth.identityservice.dto.VerifyCodeRequestDto request) {
+        HttpGlobalResponse<Void> response = new HttpGlobalResponse<>();
+        Optional<User> userFound = userRepository.findByEmail(request.getEmail());
+
+        if (userFound.isEmpty()) {
+            throw new BadRequestException("El código es inválido o ha expirado");
+        }
+
+        User user = userFound.get();
+
+        Optional<PasswordRecoveryToken> tokenFound = passwordRecoveryTokenRepository.findByCodeAndUserAndUsedFalse(request.getCode(), user);
+
+        if (tokenFound.isEmpty() || tokenFound.get().getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("El código es inválido o ha expirado");
+        }
+
+        response.setMessage("Código verificado correctamente");
         return response;
     }
 

@@ -89,6 +89,18 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @PostMapping("/verify-recovery-code")
+    public ResponseEntity<HttpGlobalResponse<Void>> verifyRecoveryCode(@Valid @RequestBody com.wd.ms_auth.identityservice.dto.VerifyCodeRequestDto request) {
+        try {
+            HttpGlobalResponse<Void> response = authService.verifyRecoveryCode(request);
+            return ResponseEntity.status(HttpStatus.OK).body(response);
+        } catch (Exception e) {
+            HttpGlobalResponse<Void> errorResponse = new HttpGlobalResponse<>();
+            errorResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+        }
+    }
+
     @PostMapping("/reset-password")
     public ResponseEntity<HttpGlobalResponse<Void>> resetPassword(@Valid @RequestBody PasswordResetRequestDto request) {
         try {

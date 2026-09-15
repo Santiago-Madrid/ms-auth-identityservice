@@ -10,6 +10,9 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import java.io.UnsupportedEncodingException;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +21,9 @@ public class EmailService {
 
     private final JavaMailSender javaMailSender;
     private final TemplateEngine templateEngine;
+
+    @Value("${SPRING_MAIL_USERNAME:}")
+    private String fromEmail;
 
     public void sendPasswordRecoveryEmail(String toEmail, String code) {
         try {
@@ -29,6 +35,7 @@ public class EmailService {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
+            helper.setFrom(fromEmail, "WORLD DANCE");
             helper.setTo(toEmail);
             helper.setSubject("Código de Recuperación de Contraseña - WORLD DANCE");
             helper.setText(htmlContent, true);
@@ -36,7 +43,7 @@ public class EmailService {
             javaMailSender.send(message);
             log.info("Recovery email sent successfully to: {}", toEmail);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Failed to send email to {}", toEmail, e);
             throw new RuntimeException("Error al enviar el correo de recuperación", e);
         }

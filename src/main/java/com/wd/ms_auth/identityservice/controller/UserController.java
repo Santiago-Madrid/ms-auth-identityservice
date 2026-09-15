@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.wd.ms_auth.identityservice.dto.UpdateUserDto;
@@ -75,6 +76,28 @@ public class UserController {
     public ResponseEntity<?> getUserById(@PathVariable Long userId) {
         try {
             UserResponseDto response = userService.getUserById(userId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            ErrorResponseDto error = ErrorResponseDto.builder()
+                    .status(HttpStatus.BAD_REQUEST.value())
+                    .message(e.getMessage())
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    /**
+     * Endpoint interno (sin @RequireRole) para que otros microservicios resuelvan
+     * el id de un usuario a partir de su correo, ej. ms-enrollment para ubicar la
+     * cuenta del agente de IA configurada por email.
+     * @param email
+     * @return usuario encontrado
+     */
+    @GetMapping("/by-email")
+    public ResponseEntity<?> getUserByEmail(@RequestParam String email) {
+        try {
+            UserResponseDto response = userService.getUserByEmail(email);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             ErrorResponseDto error = ErrorResponseDto.builder()

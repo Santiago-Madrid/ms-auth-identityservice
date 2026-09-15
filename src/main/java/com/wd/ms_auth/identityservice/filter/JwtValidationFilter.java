@@ -28,9 +28,30 @@ public class JwtValidationFilter extends OncePerRequestFilter {
         log.info("REQUEST URI -> {}", path);
 
         // Usar contains para cubrir rutas con prefijo como /api/v1/auth o /api/v1/actuator
-        return path.contains("/auth") 
-            || path.contains("/actuator") 
-            || path.contains("/error");
+        return path.contains("/auth")
+            || path.contains("/actuator")
+            || path.contains("/error")
+            || isInternalUserLookup(path);
+    }
+
+    /**
+     * /users/{id} (numérico) y /users/by-email son endpoints internos, sin
+     * @RequireRole, pensados para llamadas service-to-service (ej. ms-enrollment
+     * resolviendo datos de participantes o de la cuenta del agente de IA) que no
+     * llevan JWT. No se excluye todo /users/** para no romper el @RequireRole de
+     * /users/document/{documentNumber} ni /users/update.
+     */
+    private boolean isInternalUserLookup(String path) {
+        if (path.endsWith("/users/by-email")) {
+            return true;
+        }
+        String usersPrefix = "/users/";
+        int idx = path.lastIndexOf(usersPrefix);
+        if (idx == -1) {
+            return false;
+        }
+        String remainder = path.substring(idx + usersPrefix.length());
+        return remainder.matches("\\d+");
     }
 
     @Override

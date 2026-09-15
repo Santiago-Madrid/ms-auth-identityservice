@@ -62,7 +62,28 @@ public class UserController {
                     .build();
             return ResponseEntity.badRequest().body(error);
         }
-    } 
-    
+    }
+
+    /**
+     * Endpoint interno (sin @RequireRole) para que otros microservicios obtengan
+     * datos básicos de un usuario por su id, ej. ms-enrollment para enriquecer
+     * inscripciones con datos del participante.
+     * @param userId
+     * @return usuario encontrado
+     */
+    @GetMapping("/{userId}")
+    public ResponseEntity<?> getUserById(@PathVariable Long userId) {
+        try {
+            UserResponseDto response = userService.getUserById(userId);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            ErrorResponseDto error = ErrorResponseDto.builder()
+                    .status(HttpStatus.BAD_REQUEST.value())
+                    .message(e.getMessage())
+                    .timestamp(LocalDateTime.now())
+                    .build();
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
 
 }

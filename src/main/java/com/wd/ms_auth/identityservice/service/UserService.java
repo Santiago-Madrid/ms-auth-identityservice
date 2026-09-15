@@ -109,4 +109,33 @@ public class UserService {
         return response;
     }
 
+    /**
+     * Este método obtiene un usuario por su correo electrónico. Uso interno entre
+     * microservicios (ej. ms-enrollment para resolver el userId de la cuenta del
+     * agente de IA a partir de su email configurado).
+     *
+     * @param email
+     * @return usuario encontrado
+     */
+    public UserResponseDto getUserByEmail(String email) {
+
+        if (email == null || email.isBlank()) {
+            throw new BadRequestException("El correo es obligatorio");
+        }
+
+        User user = userRepository.findByEmail(email.trim().toLowerCase())
+                .orElseThrow(() -> new BadRequestException("Usuario no encontrado"));
+
+        UserResponseDto response = new UserResponseDto();
+
+        response.setId(user.getId());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setDocumentNumber(user.getDocumentNumber());
+        response.setEmail(user.getEmail());
+        response.setActive(user.getActive());
+
+        return response;
+    }
+
 }

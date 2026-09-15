@@ -85,5 +85,28 @@ public class UserService {
 
     }
 
+    /**
+     * Este método obtiene un usuario por su id. Uso interno entre microservicios
+     * (ej. ms-enrollment para enriquecer inscripciones con datos del participante).
+     *
+     * @param id
+     * @return usuario encontrado
+     */
+    public UserResponseDto getUserById(Long id) {
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new BadRequestException("Usuario no encontrado"));
+
+        UserResponseDto response = new UserResponseDto();
+
+        response.setId(user.getId());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setDocumentNumber(user.getDocumentNumber());
+        response.setEmail(user.getEmail());
+        response.setActive(user.getActive());
+
+        return response;
+    }
 
 }
